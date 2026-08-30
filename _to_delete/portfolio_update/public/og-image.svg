@@ -1,0 +1,14 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grad)"/>
+  <text x="600" y="220" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="white" text-anchor="middle">Abdulaziz Alaqs</text>
+  <text x="600" y="300" font-family="Arial, sans-serif" font-size="36" fill="#E0E7FF" text-anchor="middle">AI &amp; Software Engineer</text>
+  <text x="600" y="375" font-family="Arial, sans-serif" font-size="28" fill="#C7D2FE" text-anchor="middle">LLM Integration • Prompt Engineering • Full Stack</text>
+  <text x="600" y="465" font-family="Arial, sans-serif" font-size="24" fill="#DDD6FE" text-anchor="middle">OpenAI &amp; Gemini • Python • Node.js • Next.js • Flutter</text>
+  <text x="600" y="555" font-family="Arial, sans-serif" font-size="20" fill="#E9D5FF" text-anchor="middle">github.com/abdulazizallaqs</text>
+</svg>

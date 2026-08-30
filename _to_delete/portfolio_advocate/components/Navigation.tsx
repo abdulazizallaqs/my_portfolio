@@ -1,0 +1,110 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Menu, X, Mail } from 'lucide-react'
+
+const Navigation = () => {
+  const [isOpen, setIsOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 50)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const navItems = [
+    { href: '#assistant', label: 'Ask My AI' },
+    { href: '#about', label: 'Background' },
+    { href: '#skills', label: 'Skills' },
+    { href: '#projects', label: 'Projects' },
+    { href: '#experience', label: 'Experience' },
+    { href: '#certifications', label: 'Certifications' },
+    { href: '#contact', label: 'Contact' },
+  ]
+
+  return (
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+      isScrolled 
+        ? 'bg-ink-900/70 backdrop-blur-md shadow-lg border-b border-cyan-500/20 py-3' 
+        : 'bg-ink-900/60 backdrop-blur-sm py-4'
+    }`}>
+      <div className="container-custom">
+        <div className="flex items-center justify-between w-full">
+          {/* Logo Section - Left Corner */}
+          <div className="flex-shrink-0 mr-6 lg:mr-10">
+            <a href="#" className="group flex items-center">
+              <div className="relative">
+                <span className="text-2xl font-bold bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-500 bg-clip-text text-transparent tracking-tight">
+                  Abdulaziz
+                </span>
+                <span className="text-2xl font-light text-slate-300 ml-1">
+                  Alaqs
+                </span>
+                <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-cyan-600 to-blue-600 transition-all duration-300 group-hover:w-full"></div>
+              </div>
+            </a>
+          </div>
+
+          {/* Navigation Section - Right Side */}
+          <div className="flex items-center">
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center gap-5 xl:gap-7 flex-nowrap">
+              {navItems.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="text-sm xl:text-base text-slate-300 hover:text-cyan-400 font-medium transition-all duration-300 relative group py-2 whitespace-nowrap"
+                >
+                  {item.label}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-cyan-600 transition-all duration-300 group-hover:w-full"></span>
+                </a>
+              ))}
+              
+              <a
+                href="#contact"
+                className="ml-2 px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-full text-sm font-semibold hover:from-cyan-400 hover:to-blue-500 transition-all duration-300 flex items-center gap-2 whitespace-nowrap shadow-lg hover:shadow-glow transform hover:scale-105"
+              >
+                <Mail size={16} />
+                Contact Me
+              </a>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              className="lg:hidden p-2 rounded-full hover:bg-cyan-500/10 transition-all duration-300 backdrop-blur-sm"
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              {isOpen ? <X size={24} className="text-slate-300" /> : <Menu size={24} className="text-slate-300" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        {isOpen && (
+          <div className="lg:hidden mt-4 py-4 border-t border-cyan-500/20 bg-ink-900/80 backdrop-blur-md rounded-2xl">
+            {navItems.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="block py-3 px-4 text-slate-300 hover:text-cyan-400 font-medium transition-colors rounded-lg hover:bg-cyan-500/10"
+                onClick={() => setIsOpen(false)}
+              >
+                {item.label}
+              </a>
+            ))}
+            <a
+              href="#contact"
+              className="inline-flex items-center gap-2 mt-4 mx-4 px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-full font-medium hover:from-cyan-700 hover:to-blue-700 transition-all duration-300"
+            >
+              <Mail size={16} />
+              Contact Me
+            </a>
+          </div>
+        )}
+      </div>
+    </nav>
+  )
+}
+
+export default Navigation
