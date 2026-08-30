@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect, useRef, useState } from 'react'
 
 interface UseScrollAnimationOptions {
@@ -9,72 +7,123 @@ interface UseScrollAnimationOptions {
 }
 
 /**
- * Reveals content as it scrolls into view.
- * Starts visible when IntersectionObserver is unavailable or the visitor
- * prefers reduced motion, so nothing is ever stuck invisible.
+ * Reveals an element when it scrolls into view.
+ *
+ * An IntersectionObserver alone is not enough here: fast programmatic
+ * scrolling, an anchor jump straight to a section, or a layout shift after the
+ * language switches can all move an element past the viewport between two
+ * frames, so the observer never reports it as intersecting and the content
+ * stays permanently invisible. A geometry check on scroll/resize backs the
+ * observer up, and both are torn down as soon as the element has been revealed.
  */
 export const useScrollAnimation = (options: UseScrollAnimationOptions = {}) => {
-  const { threshold = 0.1, rootMargin = '0px 0px -50px 0px', triggerOnce = true } = options
+  const { threshold = 0.05, rootMargin = '0px 0px -40px 0px', triggerOnce = true } = options
   const [isVisible, setIsVisible] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    // No observer support, or reduced motion: show everything immediately.
     const prefersReduced =
       typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     if (typeof IntersectionObserver === 'undefined' || prefersReduced) {
       setIsVisible(true)
       return
     }
 
-    const node = ref.current
-    if (!node) {
+    let done = false
+    const cleanups: Array<() => void> = []
+
+    const reveal = () => {
       setIsVisible(true)
-      return
+      if (!triggerOnce) return
+      done = true
+      cleanups.forEach((fn) => fn())
+      cleanups.length = 0
+    }
+
+    const inView = () => {
+      const r = el.getBoundingClientRect()
+      const vh = window.innerHeight || document.documentElement.clientHeight
+      // Intersecting, or already scrolled past.
+      return r.top < vh && r.bottom > 0
     }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true)
-          if (triggerOnce) observer.unobserve(entry.target)
+        if (done) return
+        if (entry.isIntersecting || entry.boundingClientRect.top < 0) {
+          reveal()
         } else if (!triggerOnce) {
           setIsVisible(false)
         }
       },
       { threshold, rootMargin }
     )
+    observer.observe(el)
+    cleanups.push(() => observer.disconnect())
 
-    observer.observe(node)
+    const check = () => {
+      if (done) return
+      if (inView()) reveal()
+    }
+    window.addEventListener('scroll', check, { passive: true })
+    window.addEventListener('resize', check)
+    cleanups.push(() => {
+      window.removeEventListener('scroll', check)
+      window.removeEventListener('resize', check)
+    })
 
-    // Safety net: never leave content stuck at opacity 0 if the observer
-    // does not fire (odd scroll containers, print, headless capture).
-    const failsafe = setTimeout(() => setIsVisible(true), 2500)
+    // Catch the case where the element is already on screen at mount, and
+    // re-check once after layout has settled.
+    check()
+    const settle = window.setTimeout(check, 350)
+    cleanups.push(() => window.clearTimeout(settle))
 
     return () => {
-      clearTimeout(failsafe)
-      observer.disconnect()
+      cleanups.forEach((fn) => fn())
+      cleanups.length = 0
     }
   }, [threshold, rootMargin, triggerOnce])
 
   return { ref, isVisible }
 }
 
-export const getStaggerDelay = (index: number, baseDelay = 100) => index * baseDelay
-
-type Style = { opacity: number; transform: string; transition: string }
-
-const build = (isVisible: boolean, hidden: string, delay: number, duration = 0.6): Style => ({
-  opacity: isVisible ? 1 : 0,
-  transform: isVisible ? 'none' : hidden,
-  transition: `opacity ${duration}s cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms, transform ${duration}s cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms`,
-})
+export const getStaggerDelay = (index: number, baseDelay: number = 100) => {
+  return index * baseDelay
+}
 
 export const animationVariants = {
-  fadeInUp: (v: boolean, d = 0) => build(v, 'translateY(30px)', d),
-  fadeInLeft: (v: boolean, d = 0) => build(v, 'translateX(-30px)', d),
-  fadeInRight: (v: boolean, d = 0) => build(v, 'translateX(30px)', d),
-  scaleIn: (v: boolean, d = 0) => build(v, 'scale(0.94)', d),
-  slideInUp: (v: boolean, d = 0) => build(v, 'translateY(50px)', d, 0.8),
+  fadeInUp: (isVisible: boolean, delay: number = 0) => ({
+    opacity: isVisible ? 1 : 0,
+    transform: isVisible ? 'translateY(0)' : 'translateY(30px)',
+    transition: `all 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms`
+  }),
+  
+  fadeInLeft: (isVisible: boolean, delay: number = 0) => ({
+    opacity: isVisible ? 1 : 0,
+    transform: isVisible ? 'translateX(0)' : 'translateX(-30px)',
+    transition: `all 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms`
+  }),
+  
+  fadeInRight: (isVisible: boolean, delay: number = 0) => ({
+    opacity: isVisible ? 1 : 0,
+    transform: isVisible ? 'translateX(0)' : 'translateX(30px)',
+    transition: `all 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms`
+  }),
+  
+  scaleIn: (isVisible: boolean, delay: number = 0) => ({
+    opacity: isVisible ? 1 : 0,
+    transform: isVisible ? 'scale(1)' : 'scale(0.9)',
+    transition: `all 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms`
+  }),
+  
+  slideInUp: (isVisible: boolean, delay: number = 0) => ({
+    opacity: isVisible ? 1 : 0,
+    transform: isVisible ? 'translateY(0)' : 'translateY(50px)',
+    transition: `all 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms`
+  })
 }

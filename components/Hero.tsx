@@ -1,152 +1,257 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import { Sparkles } from 'lucide-react'
-import { useI18n } from './I18nProvider'
-import { personal, personalByLocale } from '@/data/personal'
+import { useSite } from '@/lib/site-context'
 
-/** Types a list of strings out one character at a time, then erases and moves on. */
-function useTypedRotation(items: readonly string[], enabled: boolean) {
-  const [text, setText] = useState('')
-  const [index, setIndex] = useState(0)
+const Hero = () => {
+  const { t, data } = useSite()
+  const { personal } = data
+  const [displayedName, setDisplayedName] = useState('')
+  const [isNameComplete, setIsNameComplete] = useState(false)
+  const [currentRole, setCurrentRole] = useState('')
+  const [roleIndex, setRoleIndex] = useState(0)
+  const [particles, setParticles] = useState<Array<{id: number, x: number, y: number, size: number, speed: number, opacity: number}>>([])
+  
+  const fullName = personal.name
+  const roles = useMemo(() => [...t.hero.roles], [t])
 
+  // Name typing effect
   useEffect(() => {
-    if (!enabled || items.length === 0) return
-
-    const reduced =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-    if (reduced) {
-      setText(items[index])
-      const hold = setTimeout(() => setIndex((i) => (i + 1) % items.length), 3500)
-      return () => clearTimeout(hold)
-    }
-
-    const full = items[index]
-    let char = 0
-    let erasing = false
-    let timer: ReturnType<typeof setTimeout>
-
-    const step = () => {
-      if (!erasing) {
-        char += 1
-        setText(full.slice(0, char))
-        if (char >= full.length) {
-          erasing = true
-          timer = setTimeout(step, 2600)
-          return
+    if (!fullName) return
+    setDisplayedName('')
+    setIsNameComplete(false)
+    
+    let timeout: NodeJS.Timeout
+    let currentIndex = 0
+    
+    const typeCharacter = () => {
+      if (currentIndex <= fullName.length) {
+        setDisplayedName(fullName.slice(0, currentIndex))
+        currentIndex++
+        
+        if (currentIndex <= fullName.length) {
+          timeout = setTimeout(typeCharacter, 100)
+        } else {
+          setTimeout(() => setIsNameComplete(true), 500)
         }
-        timer = setTimeout(step, 55)
-      } else {
-        char -= 1
-        setText(full.slice(0, char))
-        if (char <= 0) {
-          setIndex((i) => (i + 1) % items.length)
-          return
-        }
-        timer = setTimeout(step, 28)
       }
     }
+    
+    // Start typing after delay
+    timeout = setTimeout(typeCharacter, 1000)
+    
+    return () => clearTimeout(timeout)
+  }, [fullName])
 
-    timer = setTimeout(step, 220)
-    return () => clearTimeout(timer)
-  }, [items, index, enabled])
+  // Role rotation effect
+  useEffect(() => {
+    if (!isNameComplete) return
+    
+    let typeTimeout: NodeJS.Timeout
+    let eraseTimeout: NodeJS.Timeout
+    let cycleTimeout: NodeJS.Timeout
+    
+    const typeRole = (role: string) => {
+      let charIndex = 0
+      
+      const typeChar = () => {
+        if (charIndex <= role.length) {
+          setCurrentRole(role.slice(0, charIndex))
+          charIndex++
+          
+          if (charIndex <= role.length) {
+            typeTimeout = setTimeout(typeChar, 80)
+          }
+        }
+      }
+      
+      typeChar()
+    }
+    
+    const eraseRole = (callback: () => void) => {
+      const currentText = roles[roleIndex]
+      let charIndex = currentText.length
+      
+      const eraseChar = () => {
+        if (charIndex >= 0) {
+          setCurrentRole(currentText.slice(0, charIndex))
+          charIndex--
+          
+          if (charIndex >= 0) {
+            eraseTimeout = setTimeout(eraseChar, 50)
+          } else {
+            setTimeout(callback, 200)
+          }
+        }
+      }
+      
+      eraseChar()
+    }
+    
+    const cycleRoles = () => {
+      // Type current role
+      typeRole(roles[roleIndex])
+      
+      // After 3 seconds, erase and move to next
+      cycleTimeout = setTimeout(() => {
+        eraseRole(() => {
+          setRoleIndex(prev => (prev + 1) % roles.length)
+        })
+      }, 3000)
+    }
+    
+    // Start the cycle
+    const initialTimeout = setTimeout(cycleRoles, 500)
+    
+    return () => {
+      clearTimeout(typeTimeout)
+      clearTimeout(eraseTimeout)
+      clearTimeout(cycleTimeout)
+      clearTimeout(initialTimeout)
+    }
+  }, [isNameComplete, roleIndex, roles])
 
-  return text
-}
+  // Optimized particles
+  useEffect(() => {
+    const particleCount = 50
+    const newParticles = Array.from({ length: particleCount }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 2 + 1,
+      speed: Math.random() * 0.5 + 0.1,
+      opacity: Math.random() * 0.6 + 0.2
+    }))
+    setParticles(newParticles)
 
-export default function Hero() {
-  const { t, locale } = useI18n()
-  const p = personalByLocale[locale]
-  const [mounted, setMounted] = useState(false)
+    const animateParticles = () => {
+      setParticles(prev => prev.map(particle => ({
+        ...particle,
+        y: particle.y <= -5 ? 105 : particle.y - particle.speed
+      })))
+    }
 
-  useEffect(() => setMounted(true), [])
-
-  const role = useTypedRotation(t.hero.roles, mounted)
-  const [firstName, ...rest] = p.name.split(' ')
+    const interval = setInterval(animateParticles, 100)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
-    <section className="relative flex min-h-[92vh] items-center justify-center overflow-hidden bg-gradient-to-br from-ink-950 via-[#06182E] to-black pt-24">
-      <div className="pointer-events-none absolute inset-0 grid-overlay opacity-60" aria-hidden="true" />
-      <div className="pointer-events-none absolute inset-0 opacity-25" aria-hidden="true">
-        <div className="absolute top-20 start-10 h-96 w-96 rounded-full bg-cyan-500 blur-3xl" />
-        <div className="absolute bottom-20 end-10 h-96 w-96 rounded-full bg-blue-600 blur-3xl" />
-        <div className="absolute top-1/3 end-1/4 h-72 w-72 rounded-full bg-sky-500 blur-3xl" />
+    <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-ink-950 via-ink-850 to-ink-950 pt-20 relative overflow-hidden">
+      {/* Animated Particles */}
+      <div className="absolute inset-0 pointer-events-none">
+        {particles.map(particle => (
+          <div
+            key={particle.id}
+            className="absolute bg-cyan-400 rounded-full"
+            style={{
+              left: `${particle.x}%`,
+              top: `${particle.y}%`,
+              width: `${particle.size}px`,
+              height: `${particle.size}px`,
+              opacity: particle.opacity,
+            }}
+          />
+        ))}
       </div>
 
-      <div className="container-custom relative z-10 px-4 text-center sm:px-6">
-        <div className="mb-10 flex justify-center">
-          <div className="group relative">
-            <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-cyan-400/40 via-sky-500/40 to-blue-600/40 opacity-60 blur-lg transition-opacity duration-700 group-hover:opacity-100" />
-            <div className="relative h-44 w-44 overflow-hidden rounded-full bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-600 p-1 shadow-glow sm:h-52 sm:w-52 lg:h-60 lg:w-60">
-              <div className="h-full w-full overflow-hidden rounded-full bg-ink-950">
+      {/* Circuit grid */}
+      <div className="absolute inset-0 grid-overlay opacity-60 pointer-events-none"></div>
+
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-25">
+        <div className="absolute w-96 h-96 bg-cyan-500 rounded-full blur-3xl top-20 left-10"></div>
+        <div className="absolute w-96 h-96 bg-blue-600 rounded-full blur-3xl bottom-20 right-10"></div>
+        <div className="absolute w-72 h-72 bg-sky-500 rounded-full blur-3xl top-1/3 right-1/4"></div>
+      </div>
+
+      {/* Content Layer */}
+      <div className="container-custom text-center relative z-10 px-4 sm:px-6">
+        {/* Professional Profile Image */}
+        <div className="mb-12 mt-16 flex justify-center">
+          <div className="relative group">
+            {/* Subtle glow effect */}
+            <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400/40 via-sky-500/40 to-blue-600/40 rounded-full blur-lg opacity-60 group-hover:opacity-100 transition-all duration-700"></div>
+            
+            {/* Main image container */}
+            <div className="relative w-48 h-48 sm:w-56 sm:h-56 lg:w-64 lg:h-64 rounded-full overflow-hidden bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-600 p-1 shadow-glow">
+              <div className="w-full h-full rounded-full overflow-hidden bg-ink-950">
                 <Image
                   src="/profile.jpg"
-                  alt={`${p.name} — ${p.role}`}
+                  alt={`${personal.name} — ${personal.title}`}
                   width={512}
                   height={512}
                   priority
-                  sizes="(max-width: 640px) 11rem, 15rem"
-                  className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-all duration-500"
                 />
               </div>
             </div>
+
+            {/* Subtle ring animation */}
+            <div className="absolute inset-0 rounded-full border border-cyan-400/30 group-hover:border-cyan-300/60 transition-all duration-500"></div>
           </div>
         </div>
 
-        <p className="mb-4 text-lg font-medium text-slate-400 sm:text-xl">{t.hero.greeting}</p>
+        {/* Typography */}
+        <div className="mb-12">
+          <p className={`text-xl sm:text-2xl text-body mb-6 font-medium transition-all duration-1000 ${isNameComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            {t.hero.greeting}
+          </p>
+          <h1 className="leading-none mb-8" role="banner">
+            <span className="text-4xl sm:text-5xl lg:text-6xl font-bold">
+              <span className="brand-gradient">
+                {displayedName.split(' ')[0]}
+              </span>
+              {displayedName.split(' ').slice(1).join(' ') && (
+                <span className="text-fg font-light ms-3 sm:ms-4">
+                  {displayedName.split(' ').slice(1).join(' ')}
+                </span>
+              )}
+              <span className={`text-fg ${isNameComplete ? 'animate-pulse' : 'animate-pulse'}`}>|</span>
+            </span>
+          </h1>
+        </div>
+        
+        <div className="mb-12">
+          <h2 className={`text-2xl sm:text-3xl lg:text-4xl mb-6 font-medium transition-all duration-1000 delay-500 ${isNameComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <span className="brand-gradient">{t.hero.title}</span>
+          </h2>
+          
+          <p className="text-lg sm:text-xl text-body max-w-3xl mx-auto leading-relaxed min-h-[2rem] transition-all duration-300">
+            <span className="brand-gradient">
+              {currentRole}
+            </span>
+            {isNameComplete && (
+              <span className="animate-pulse text-cyan-400">|</span>
+            )}
+          </p>
+          
+          <p className={`text-base sm:text-lg text-subtle max-w-2xl mx-auto mt-4 leading-relaxed transition-all duration-1000 delay-1000 ${isNameComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            {personal.tagline}
+          </p>
+        </div>
 
-        <h1 className="mb-6 text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
-          <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-400 bg-clip-text text-transparent">
-            {firstName}
-          </span>
-          {rest.length > 0 && <span className="ms-3 font-light text-white">{rest.join(' ')}</span>}
-        </h1>
-
-        <h2 className="mb-5 text-2xl font-medium sm:text-3xl lg:text-4xl">
-          <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-500 bg-clip-text text-transparent">
-            {p.role}
-          </span>
-        </h2>
-
-        <p
-          className="mx-auto min-h-[3.5rem] max-w-3xl text-lg leading-relaxed sm:text-xl"
-          aria-live="polite"
-        >
-          <bdi className="bg-gradient-to-r from-cyan-300 to-sky-400 bg-clip-text text-transparent">
-            {role || t.hero.roles[0]}
-          </bdi>
-          <span className="animate-pulse text-cyan-400" aria-hidden="true">
-            |
-          </span>
-        </p>
-
-        <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-slate-400 sm:text-lg">
-          {p.tagline}
-        </p>
-
-        <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+        {/* CTA */}
+        <div className={`mb-8 flex flex-col sm:flex-row items-center justify-center gap-4 transition-all duration-1000 delay-1500 ${isNameComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <a
             href="#assistant"
-            className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 px-8 py-4 font-semibold text-white shadow-glow transition-all duration-300 hover:from-cyan-400 hover:via-sky-400 hover:to-blue-500 hover:shadow-2xl"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white rounded-2xl font-semibold hover:from-cyan-400 hover:via-sky-400 hover:to-blue-500 transition-all duration-500 shadow-glow hover:shadow-2xl transform hover:scale-105 hover:-translate-y-1 group relative overflow-hidden"
           >
-            <Sparkles size={20} aria-hidden="true" />
-            {t.hero.askAssistant}
+            <Sparkles size={20} className="relative z-10" />
+            <span className="relative z-10">{t.hero.askAI}</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-pure/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform -skew-x-12 translate-x-full group-hover:translate-x-0"></div>
           </a>
           <a
             href="#projects"
-            className="inline-flex items-center rounded-2xl border border-cyan-400/40 px-8 py-4 font-semibold text-cyan-200 transition-all duration-300 hover:border-cyan-300 hover:bg-cyan-500/10"
+            className="inline-flex items-center px-8 py-4 border border-cyan-400/40 text-cyan-200 rounded-2xl font-semibold hover:border-cyan-300 hover:bg-cyan-500/10 transition-all duration-300 transform hover:scale-105"
           >
             {t.hero.viewWork}
           </a>
         </div>
-
-        <p className="mt-8 text-sm text-slate-500">
-          <span className="latin">{personal.email}</span>
-        </p>
       </div>
     </section>
   )
 }
+
+export default Hero

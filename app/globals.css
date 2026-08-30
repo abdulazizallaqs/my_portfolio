@@ -2,130 +2,256 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ---------- 3D project cards ---------- */
-.perspective-1000 {
-  perspective: 1000px;
-}
-.transform-style-preserve-3d {
-  transform-style: preserve-3d;
-}
-.backface-hidden {
-  backface-visibility: hidden;
+/* ============================================================
+   THEME TOKENS
+   Dark is the default. Adding `.light` to <html> flips the site.
+   Every surface / foreground colour resolves through these
+   variables, so no component needs a `dark:` variant.
+   ============================================================ */
+:root {
+  color-scheme: dark;
+
+  --ink-950: 5 11 24; /* #050B18 page */
+  --ink-900: 10 20 40; /* #0A1428 cards */
+  --ink-850: 6 24 46; /* #06182E mid gradient */
+  --ink-800: 15 30 56; /* #0F1E38 inputs */
+  --ink-700: 22 41 74; /* #16294A borders */
+
+  --fg: 255 255 255;
+  --fg-body: 203 213 225;
+  --fg-muted: 148 163 184; /* 7.67:1 */
+  --fg-subtle: 132 150 173; /* 6.51:1 */
+  --fg-faint: 116 131 155; /* 5.12:1 */
+
+  --glow: 34 211 238;
+
+  /* Heading gradient stops */
+  --hg-1: #ffffff;
+  --hg-2: #a5f3fc;
+  --hg-3: #38bdf8;
+
+  /* Brand wordmark gradient */
+  --br-1: #67e8f9;
+  --br-2: #38bdf8;
+  --br-3: #3b82f6;
+
+  --grid-line: rgba(34, 211, 238, 0.06);
+  --scrollbar-track: #050b18;
+
+  --font-ui: 'Inter';
+  --font-ar: 'Tajawal';
 }
 
-/* ---------- Scrollbar ---------- */
-::-webkit-scrollbar {
-  width: 10px;
+:root.light {
+  color-scheme: light;
+
+  --ink-950: 246 249 252; /* #F6F9FC page */
+  --ink-900: 255 255 255; /* #FFFFFF cards */
+  --ink-850: 234 242 249; /* #EAF2F9 mid gradient */
+  --ink-800: 238 244 249; /* #EEF4F9 inputs */
+  --ink-700: 205 220 233; /* #CDDCE9 borders */
+
+  --fg: 11 23 41;
+  --fg-body: 51 69 95;
+  --fg-muted: 76 94 119; /* 6.26:1 */
+  --fg-subtle: 85 101 121; /* 5.64:1 */
+  --fg-faint: 95 112 133; /* 4.80:1 */
+
+  --glow: 8 145 178;
+
+  --hg-1: #0b1729;
+  --hg-2: #0e7490;
+  --hg-3: #0369a1;
+
+  --br-1: #0891b2;
+  --br-2: #0284c7;
+  --br-3: #2563eb;
+
+  --grid-line: rgba(8, 145, 178, 0.09);
+  --scrollbar-track: #e6eef6;
 }
-::-webkit-scrollbar-track {
-  background: #050b18;
+
+/* ------------------------------------------------------------
+   Accent text: the 100–400 shades read well on dark but wash out
+   on light, so the light theme darkens them. Backgrounds, borders
+   and gradient fills (500–700) work on both and stay untouched.
+   ------------------------------------------------------------ */
+:root.light .text-cyan-100 { color: #164e63; }
+:root.light .text-cyan-200 { color: #155e75; }
+:root.light .text-cyan-300 { color: #0e7490; }
+:root.light .text-cyan-400 { color: #0e7490; }
+:root.light .text-sky-200 { color: #075985; }
+:root.light .text-sky-300 { color: #0369a1; }
+:root.light .text-sky-400 { color: #0369a1; }
+:root.light .text-teal-200 { color: #115e59; }
+:root.light .text-teal-300 { color: #0f766e; }
+:root.light .text-teal-400 { color: #0f766e; }
+:root.light .text-blue-100 { color: #1e3a8a; }
+:root.light .text-blue-200 { color: #1e3a8a; }
+:root.light .text-blue-300 { color: #1d4ed8; }
+:root.light .text-blue-400 { color: #2563eb; }
+
+:root.light .hover\:text-cyan-300:hover,
+:root.light .hover\:text-cyan-400:hover,
+:root.light .group:hover .group-hover\:text-cyan-300 { color: #0e7490; }
+
+/* Elevated cards need a real shadow on light backgrounds */
+:root.light .shadow-glow { box-shadow: 0 10px 40px -12px rgba(8, 145, 178, 0.35); }
+
+/* ============================================================
+   3D PROJECT CARDS
+   ============================================================ */
+.perspective-1000 { perspective: 1000px; }
+.transform-style-preserve-3d { transform-style: preserve-3d; }
+.backface-hidden { backface-visibility: hidden; }
+.rotate-y-180 { transform: rotateY(180deg); }
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
+
+html { scroll-behavior: smooth; }
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
 ::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #06b6d4, #2563eb);
   border-radius: 6px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #22d3ee;
-}
+::-webkit-scrollbar-thumb:hover { background: #22d3ee; }
 
-::selection {
-  background: rgba(34, 211, 238, 0.3);
-  color: #ffffff;
-}
+::selection { background: rgba(34, 211, 238, 0.3); color: rgb(var(--fg)); }
 
-/* ---------- Circuit grid overlay ---------- */
+/* ============================================================
+   CIRCUIT GRID OVERLAY
+   ============================================================ */
 .grid-overlay {
   background-image:
-    linear-gradient(rgba(34, 211, 238, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.06) 1px, transparent 1px);
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 56px 56px;
   mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
   -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
 }
 
-:root {
-  --font-latin: 'Inter';
-  --font-arabic: 'Tajawal';
+/* ============================================================
+   MOBILE
+   ============================================================ */
+@media (max-width: 768px) {
+  @media (prefers-reduced-motion: no-preference) {
+    .perspective-1000 { perspective: 800px; }
+  }
+  @media (max-width: 360px) {
+    .perspective-1000 { perspective: none; }
+    .transform-style-preserve-3d { transform-style: flat; }
+  }
+  button, a { min-height: 44px; min-width: 44px; }
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.6; }
+  25% { transform: translateY(-20px) translateX(10px); opacity: 0.8; }
+  50% { transform: translateY(-10px) translateX(-5px); opacity: 0.4; }
+  75% { transform: translateY(-30px) translateX(15px); opacity: 0.7; }
+}
+
+@keyframes float-delayed {
+  0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.4; }
+  33% { transform: translateY(-15px) translateX(-10px); opacity: 0.6; }
+  66% { transform: translateY(-25px) translateX(8px); opacity: 0.3; }
+}
+
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-float-delayed { animation: float-delayed 8s ease-in-out infinite; animation-delay: 2s; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @layer base {
-  html {
-    scroll-behavior: smooth;
-    /* Keeps anchor targets clear of the fixed navigation bar */
-    scroll-padding-top: 6rem;
-  }
+  html { scroll-behavior: smooth; }
+  * { @apply scroll-smooth; }
 
   body {
-    background-color: #050b18;
-    color: #cbd5e1;
+    font-family: var(--font-ui), Inter, system-ui, sans-serif;
+    background-color: rgb(var(--ink-950));
+    color: rgb(var(--fg-body));
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  /* Arabic gets its own face and slightly looser leading for legibility */
+  /* Arabic typography */
   html[lang='ar'] body {
-    font-family: var(--font-arabic), Tajawal, system-ui, sans-serif;
-    line-height: 1.85;
+    font-family: var(--font-ar), Tajawal, system-ui, sans-serif;
+    letter-spacing: 0;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @apply font-semibold text-white;
-  }
+  h1, h2, h3, h4, h5, h6 { @apply font-semibold text-fg; }
+  h1 { @apply text-4xl md:text-5xl lg:text-6xl; }
+  h2 { @apply text-3xl md:text-4xl; }
+  h3 { @apply text-2xl md:text-3xl; }
 
-  /* Latin names, tech terms and code stay in the Latin face inside Arabic text */
-  .latin {
-    font-family: var(--font-latin), Inter, system-ui, sans-serif;
-    direction: ltr;
-    unicode-bidi: isolate;
-    display: inline-block;
-  }
+  /* Form controls inherit the theme instead of the UA default */
+  input, textarea, select { color: rgb(var(--fg)); }
+  input::placeholder, textarea::placeholder { color: rgb(var(--fg-subtle)); }
 
   :focus-visible {
     outline: 2px solid #22d3ee;
-    outline-offset: 3px;
-    border-radius: 4px;
+    outline-offset: 2px;
   }
 }
 
 @layer components {
-  .section-padding {
-    @apply py-16 md:py-24;
+  .btn-primary {
+    @apply bg-cyan-500 hover:bg-cyan-400 text-carbon px-6 py-3 rounded-lg font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400;
   }
 
-  .container-custom {
-    @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+  .btn-secondary {
+    @apply border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 px-6 py-3 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500;
   }
+
+  .section-padding { @apply py-16 md:py-24; }
+
+  .container-custom { @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8; }
 
   .tech-card {
     @apply bg-ink-900/70 backdrop-blur-xl border border-cyan-500/15 rounded-2xl;
   }
 
-  .chip {
-    @apply inline-flex items-center rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1 text-xs font-medium text-cyan-200;
+  /* Theme-aware gradient headings — replaces the repeated
+     `from-white via-cyan-200 to-sky-400 bg-clip-text` chains. */
+  .heading-gradient {
+    background-image: linear-gradient(to right, var(--hg-1), var(--hg-2), var(--hg-3));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
-  .skip-link {
-    @apply sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-[100] focus:rounded-lg focus:bg-cyan-500 focus:px-4 focus:py-2 focus:font-semibold focus:text-ink-950;
+  .brand-gradient {
+    background-image: linear-gradient(to right, var(--br-1), var(--br-2), var(--br-3));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+  .text-balance { text-wrap: balance; }
+  .gpu-accelerated { transform: translateZ(0); will-change: transform; }
 }
 
-/* ---------- Motion preferences ---------- */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
-  }
-}
+/* RTL: mirror directional decorations */
+[dir='rtl'] .rtl-flip { transform: scaleX(-1); }

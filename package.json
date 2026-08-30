@@ -1,6 +1,6 @@
 {
   "name": "abdulaziz-alaqs-portfolio",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,19 +12,22 @@
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "autoprefixer": "^10.0.1",
-    "lucide-react": "^0.550.0",
+    "framer-motion": "^10.16.0",
+    "lucide-react": "^0.294.0",
     "next": "^16.0.7",
     "postcss": "^8",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-intersection-observer": "^9.16.0",
     "tailwindcss": "^3.3.0"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "eslint": "^9",
-    "eslint-config-next": "^16.0.7",
+    "eslint": "^8",
+    "eslint-config-next": "14.0.0",
+    "playwright": "^1.62.1",
     "prettier": "^3.0.0",
     "typescript": "^5"
   }

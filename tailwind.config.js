@@ -1,9 +1,38 @@
 /** @type {import('tailwindcss').Config} */
+
+/** A colour driven by a CSS variable, still alpha-aware (`bg-ink-900/70`). */
+const v = (name) => `rgb(var(${name}) / <alpha-value>)`
+
 module.exports = {
-  content: ['./components/**/*.{js,ts,jsx,tsx,mdx}', './app/**/*.{js,ts,jsx,tsx,mdx}'],
+  content: [
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './lib/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
   theme: {
     extend: {
       colors: {
+        /* ---- Surfaces: flip between the dark and light themes ---- */
+        ink: {
+          950: v('--ink-950'), // page background
+          900: v('--ink-900'), // cards / panels
+          850: v('--ink-850'), // mid gradient tone
+          800: v('--ink-800'), // inputs / chips
+          700: v('--ink-700'), // borders / dividers
+        },
+
+        /* ---- Semantic foreground scale ---- */
+        fg: v('--fg'), // headings, strong text
+        body: v('--fg-body'), // paragraphs
+        muted: v('--fg-muted'), // secondary text
+        subtle: v('--fg-subtle'), // captions
+        faint: v('--fg-faint'), // hints
+
+        /* ---- Fixed tokens that must never flip ---- */
+        pure: '#ffffff', // literal white: overlays and text on accent fills
+        carbon: '#050b18', // literal near-black: text on light accent fills
+
         primary: {
           50: '#ecfeff',
           400: '#22d3ee',
@@ -11,28 +40,13 @@ module.exports = {
           600: '#0891b2',
           700: '#0e7490',
         },
-        ink: {
-          950: '#050B18',
-          900: '#0A1428',
-          800: '#0F1E38',
-          700: '#16294A',
-        },
       },
       fontFamily: {
-        sans: ['var(--font-latin)', 'Inter', 'system-ui', 'sans-serif'],
-        arabic: ['var(--font-arabic)', 'Tajawal', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-ui)', 'Inter', 'system-ui', 'sans-serif'],
+        arabic: ['var(--font-ar)', 'Tajawal', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        glow: '0 0 40px -10px rgba(34, 211, 238, 0.45)',
-      },
-      keyframes: {
-        'fade-up': {
-          from: { opacity: '0', transform: 'translateY(14px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
-        },
-      },
-      animation: {
-        'fade-up': 'fade-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) both',
+        glow: '0 0 40px -10px rgb(var(--glow) / 0.45)',
       },
     },
   },

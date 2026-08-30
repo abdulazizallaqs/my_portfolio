@@ -1,129 +1,158 @@
-# Abdulaziz Alaqs — Portfolio
+# Abdulaziz Alaqs — AI & Software Engineer Portfolio
 
-A bilingual (English / Arabic) personal site built with **Next.js 16**, **TypeScript** and
-**Tailwind CSS**. Every project has its own page, in both languages, with proper canonical
-and `hreflang` tags so search engines index the pair correctly.
+A personal portfolio built with Next.js 16, TypeScript, and Tailwind CSS. Every section
+is driven from a single structured data file, so content updates never require touching
+component code.
 
----
+## Sections
 
-## URLs
+- **Hero** — name, role, and a rotating list of specialisations
+- **Ask My AI Assistant** — AAA, a chat assistant that answers questions about my work
+- **Background** — programming journey and AI engineering capabilities (three tabs: Background / AI Engineering / How I Build)
+- **What I Build** — the end-to-end delivery pipeline I run alone, with proof per stage, plus what someone can commission
+- **Skills** — six rotating categories, AI-first
+- **Projects** — flip cards with problem, impact, tech stack, and links
+- **Experience** — animated timeline
+- **Certifications** — filterable by category
+- **Contact** — form (EmailJS or mailto fallback) plus direct links
 
-| Page | English | Arabic |
+## Language and theme
+
+The site ships bilingual (English / Arabic) and in two themes (dark by default, light optional).
+Both switches sit in the navigation bar and persist in `localStorage` (`aa.lang`, `aa.theme`);
+an inline script in `app/layout.tsx` applies the stored choice before first paint, so there is
+no flash of the wrong language or theme.
+
+`lib/site-context.tsx` is the single source of truth. `useSite()` returns:
+
+| Value | What it is |
+|---|---|
+| `lang` / `dir` / `isRTL` | `'en' \| 'ar'`, and the matching document direction |
+| `t` | UI copy for the active language, from `lib/ui.ts` |
+| `data` | `data/portfolio.json` or `data/portfolio.ar.json` |
+| `theme` | `'dark' \| 'light'` |
+| `setLang` / `toggleLang` / `setTheme` / `toggleTheme` | Switches |
+
+**Adding or changing copy:** English is the schema of record. Edit `data/portfolio.json`
+and `lib/ui.ts` (the `ui.en` object), then mirror the same keys in `data/portfolio.ar.json`
+and `ui.ar`. Both objects are typed, so a missing key is a build error rather than a blank
+spot on the page.
+
+**RTL** is handled with Tailwind logical properties (`ms-*`, `me-*`, `ps-*`, `pe-*`,
+`start-*`) and the `rtl:` variant — not with mirrored stylesheets. When adding markup, reach
+for the logical property rather than `ml-*` / `left-*` and Arabic works for free.
+
+### Theming tokens
+
+Colours are CSS custom properties in `app/globals.css`, exposed to Tailwind through
+`rgb(var(--x) / <alpha-value>)` in `tailwind.config.js`. Adding `.light` to `<html>` swaps
+the token block and the whole site follows — no component carries a `dark:` variant.
+
+| Token group | Use |
+|---|---|
+| `--ink-950 … --ink-700` | Surfaces: page, cards, gradients, inputs, borders |
+| `--fg`, `--fg-body`, `--fg-muted`, `--fg-subtle`, `--fg-faint` | Text ramp, every step ≥ 4.5:1 contrast in both themes |
+| `--hg-1..3`, `--br-1..3` | Gradient stops for the `.heading-gradient` and `.brand-gradient` utilities |
+| `pure` / `carbon` | Literal white / near-black, for text sitting on an accent fill in both themes |
+
+In Tailwind these read as `bg-ink-900`, `text-fg`, `text-muted`, and so on. Use the
+`.heading-gradient` utility for gradient headings instead of a `from-… bg-clip-text` chain,
+so light mode is handled automatically.
+
+## Editing content
+
+Almost everything lives in **`data/portfolio.json`**:
+
+| Key | What it controls |
+|---|---|
+| `personal` | Name, title, tagline, email, LinkedIn, GitHub, location |
+| `about.description` | The main Background paragraph |
+| `skills` | Skill groups used across the site |
+| `projects` | Project cards (leave `demo` as `""` to hide the demo button) |
+| `experience` | Timeline entries |
+
+Section-specific copy that isn't in the JSON — the Background tabs, expertise cards,
+and the skill rings — lives in `components/About.tsx` and `components/Skills.tsx`.
+
+### Add your photo
+
+The hero and profile card currently show your initials on a gradient. To use a real photo:
+
+1. Drop the image in `public/` (e.g. `public/profile.jpg`)
+2. In `components/Hero.tsx`, replace the `<span>{initials}</span>` block with an `<img src="/profile.jpg" ... />`
+3. Do the same in the profile card in `components/About.tsx`
+
+### The AI Assistant
+
+The "Ask My AI Assistant" section is a chat backed by the Google Gemini API. The route at
+`app/api/assistant/route.ts` builds a system prompt from `data/portfolio.json`, so the
+assistant automatically stays in sync with the rest of the site — update the JSON and the
+assistant knows the new content.
+
+**Setup:**
+
+1. Get a free API key at https://aistudio.google.com/app/apikey
+2. Create a `.env.local` file in the project root:
+   ```
+   GEMINI_API_KEY=your_key_here
+   ```
+3. Restart the dev server.
+
+Without a key the chat still renders and replies with a short "not connected yet" message,
+so the site never looks broken.
+
+**Not working? Check it in one step.** With the dev server running, open:
+
+```
+http://localhost:3000/api/assistant
+```
+
+That health check tells you exactly what is wrong:
+
+| Response `status` | Meaning | Fix |
 |---|---|---|
-| Home | `/` | `/ar` |
-| All projects | `/projects` | `/ar/projects` |
-| A project | `/projects/math-heroes` | `/ar/projects/math-heroes` |
+| `not-configured` | The key was never loaded | Put `GEMINI_API_KEY=...` in `.env.local` (project root, same folder as `package.json`) and **restart** the dev server |
+| `key-present-but-no-model-answered` | Key found, Google rejected it | `400` = key is invalid, `403` = the Generative Language API isn't enabled for that key, `404` = model unavailable on your key |
+| `ready` | Working — `activeModel` names the model in use | — |
 
-Project slugs: `tender-management-system`, `student-helper`, `ecommerce-data-pipeline`,
-`math-heroes`, `quran-app`.
+Two things trip people up most often: the file must be named exactly `.env.local`
+(not `env.local` or `.env.local.txt`), and Next.js only reads it at startup — you have to
+stop the server with Ctrl+C and run `npm run dev` again.
 
-Short links redirect for convenience — `/math-heroes` → `/projects/math-heroes` (see
-`next.config.js`). `/sitemap.xml` and `/robots.txt` are generated automatically.
+**Model:** defaults to `gemini-2.5-flash`. Google has retired `gemini-1.5-flash`, so it is
+no longer served by the API. To pin a different model, set `GEMINI_MODEL` in `.env.local`;
+the route falls through a list of candidates if the requested model is unavailable on your
+key, so the chat keeps working when Google rotates models.
 
----
+**Deploying to Vercel:** add `GEMINI_API_KEY` under Project Settings → Environment Variables.
 
-## Running it locally
+### Before deploying
+
+- Update the domain in `public/robots.txt` and `public/sitemap.xml`
+- Add your real LinkedIn URL in `data/portfolio.json` if it differs
+- Optionally configure EmailJS (see `EMAILJS_SETUP.md`); without it the contact form falls back to a `mailto:` link
+
+## Running locally
 
 ```bash
 npm install
-cp .env.example .env.local   # then fill in what you need
-npm run dev                  # http://localhost:3000
+npm run dev      # http://localhost:3000
+npm run build    # production build
 ```
-
-```bash
-npm run build && npm start   # production build
-```
-
----
-
-## Environment variables
-
-| Variable | Required | What it does |
-|---|---|---|
-| `NEXT_PUBLIC_SITE_URL` | For production | The canonical domain. Sitemap, robots, canonical links, `hreflang` and Open Graph URLs all derive from it. |
-| `GEMINI_API_KEY` | Optional | Turns on the AAA assistant. Free key: <https://aistudio.google.com/app/apikey> |
-| `GEMINI_MODEL` | Optional | Pins a model. Defaults to `gemini-flash-latest`, which always points at Google's current Flash model. |
-| `NEXT_PUBLIC_EMAILJS_*` | Optional | Sends the contact form through EmailJS. Without them the form opens the visitor's mail client instead. |
-
-Nothing here is mandatory for the site to run — every optional feature degrades gracefully.
-
----
-
-## Where the content lives
-
-All content is data, not markup. To change what the site says, edit these files only:
-
-| File | What it holds |
-|---|---|
-| `data/personal.ts` | Name, contact details, title, tagline, location — per language |
-| `data/projects.ts` | Every project: slug, year, tech, links, screenshots, and the full English + Arabic case study |
-| `data/resume.ts` | Summary, expertise, skills, experience, certifications, interests — per language |
-| `lib/dictionary.ts` | Every interface string (buttons, headings, labels) in both languages |
-
-### Adding a project
-
-Append an entry to the `projects` array in `data/projects.ts`. Give it a `slug`, then fill in
-the `en` and `ar` blocks. TypeScript will tell you if anything is missing — and that is the
-whole point: an Arabic translation cannot be forgotten silently.
-
-The page, the card on the home page, the projects index, the sitemap entry and both language
-alternates are generated from that one entry.
-
-### Adding screenshots
-
-Put images in `public/projects/<slug>/` and reference them in the project's `images` array with
-their real `width` and `height` plus alt text in both languages. WebP at ~1600px wide keeps the
-page fast.
-
----
-
-## How the two languages work
-
-There is no translation library. Two Next.js route groups each own a root layout:
-
-```
-app/
-  (en)/          → /            /projects        /projects/[slug]
-  (ar)/ar/       → /ar          /ar/projects     /ar/projects/[slug]
-```
-
-Each layout renders `<html lang dir>` on the server, so Arabic is right-to-left on first
-paint — no flash, no client-side swap. `components/I18nProvider.tsx` passes the dictionary
-down; client components read it with `useI18n()`.
-
-Layout direction uses logical CSS properties (`ms-`, `me-`, `ps-`, `start-`, `end-`) so a single
-set of styles serves both directions. Latin fragments inside Arabic text are wrapped in
-`.latin`, which isolates them from the bidirectional algorithm.
-
-The language switcher keeps the visitor on the same page: `/projects/math-heroes` ↔
-`/ar/projects/math-heroes`.
-
----
-
-## The AI assistant (AAA)
-
-`app/api/assistant/route.ts` builds its knowledge base from `data/*.ts` at request time, so the
-assistant is always in sync with the site — update a project and it knows about it. It tries a
-chain of Gemini models in order and falls back through them; with no API key it returns a clear
-message instead of breaking. It answers in whichever language the visitor is browsing in.
-
----
 
 ## Deploying
 
-1. Push the repository to GitHub.
-2. Import it at <https://vercel.com/new> — the framework is detected automatically.
-3. Add the environment variables above (at minimum `NEXT_PUBLIC_SITE_URL`).
-4. Add your domain under **Settings → Domains** and point its DNS at Vercel.
+Push to GitHub and import the repository on [Vercel](https://vercel.com) — no configuration needed.
 
-Every push to the default branch then deploys automatically.
+## Stack
+
+Next.js 16 · React 19 · TypeScript · Tailwind CSS · lucide-react · EmailJS · Google Gemini
+
+## Contact
+
+- Email: abdulazizallaqs@gmail.com
+- GitHub: https://github.com/abdulazizallaqs
 
 ---
 
-## Accessibility and performance notes
-
-- Skip-to-content link, labelled landmarks, and `aria-*` on every interactive control.
-- All motion is disabled under `prefers-reduced-motion`.
-- Scroll reveals have a timeout failsafe, so content is never stuck invisible.
-- Screenshots are WebP, sized and lazy-loaded through `next/image`.
-- JSON-LD (`Person` on the home page, `CreativeWork` on each project) for rich results.
+Originally forked from a portfolio template by [@eshfaq-ux](https://github.com/eshfaq-ux); all content, structure, and copy have been rewritten.
