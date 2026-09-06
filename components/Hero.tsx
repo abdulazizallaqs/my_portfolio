@@ -198,8 +198,17 @@ const Hero = () => {
           <p className={`text-xl sm:text-2xl text-body mb-6 font-medium transition-all duration-1000 ${isNameComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             {t.hero.greeting}
           </p>
-          <h1 className="leading-none mb-8" role="banner">
-            <span className="text-4xl sm:text-5xl lg:text-6xl font-bold">
+          <h1 className="leading-none mb-8">
+            {/*
+              The visible name types itself in, so on the server — and for any
+              crawler that does not run JavaScript — the H1 would otherwise be
+              empty. This carries the real heading text at all times; the
+              animated version below is decorative.
+            */}
+            <span className="sr-only">
+              {personal.name} — {personal.title}
+            </span>
+            <span aria-hidden="true" className="text-4xl sm:text-5xl lg:text-6xl font-bold">
               <span className="brand-gradient">
                 {displayedName.split(' ')[0]}
               </span>
@@ -218,7 +227,13 @@ const Hero = () => {
             <span className="brand-gradient">{t.hero.title}</span>
           </h2>
           
-          <p className="text-lg sm:text-xl text-body max-w-3xl mx-auto leading-relaxed min-h-[2rem] transition-all duration-300">
+          {/*
+            The role text types itself out and erases again, so its length — and
+            therefore its wrapped line count — changes every frame. Reserving two
+            lines of height stops the block collapsing and shunting the rest of
+            the hero up and down on narrow screens.
+          */}
+          <p className="text-lg sm:text-xl text-body max-w-3xl mx-auto leading-relaxed min-h-[3.75rem] sm:min-h-[4.25rem] px-2">
             <span className="brand-gradient">
               {currentRole}
             </span>

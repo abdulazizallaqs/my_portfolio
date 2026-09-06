@@ -79,7 +79,3 @@ Prompt\ Engineering\ Certificate.pdf
 **/*secret*
 *.key
 api-keys/
-
-# local housekeeping
-_to_delete/
-_backup-*/

@@ -88,6 +88,12 @@ const AIAssistant = () => {
     }
   }, [messages, isLoading])
 
+  /**
+   * The route streams plain text, so the answer is painted word by word as it
+   * arrives instead of after the whole generation finishes. A JSON content-type
+   * means the server short-circuited (no key, or no model answered) and is
+   * sending a single canned reply.
+   */
   const send = async (text: string) => {
     const question = text.trim()
     if (!question || isLoading) return
@@ -103,16 +109,43 @@ const AIAssistant = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: next, lang })
       })
-      const payload = await res.json()
-      if (payload.configured === false) setNeedsKey(true)
-      setMessages([
-        ...next,
-        {
-          role: 'assistant',
-          content:
-            payload.reply || `${c.errorGeneric} ${personal.email}.`
+
+      const isJson = res.headers.get('content-type')?.includes('application/json')
+
+      if (isJson || !res.body) {
+        const payload = await res.json().catch(() => ({}))
+        if (payload.configured === false) setNeedsKey(true)
+        setMessages([
+          ...next,
+          { role: 'assistant', content: payload.reply || `${c.errorGeneric} ${personal.email}.` }
+        ])
+        return
+      }
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let answer = ''
+      let opened = false
+
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        answer += decoder.decode(value, { stream: true })
+        if (!answer) continue
+
+        if (!opened) {
+          opened = true
+          setIsLoading(false)
+          setMessages([...next, { role: 'assistant', content: answer }])
+        } else {
+          setMessages([...next, { role: 'assistant', content: answer }])
         }
-      ])
+      }
+
+      if (!answer.trim()) {
+        setMessages([...next, { role: 'assistant', content: `${c.errorGeneric} ${personal.email}.` }])
+      }
     } catch {
       setMessages([
         ...next,

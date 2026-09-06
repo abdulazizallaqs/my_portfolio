@@ -1,49 +1,60 @@
 import type { Metadata, Viewport } from 'next'
 import { ReactNode } from 'react'
 import { SiteProvider } from '@/lib/site-context'
+import { SITE_URL, TITLE, DESCRIPTION, KEYWORDS, buildJsonLd } from '@/lib/seo'
 import './globals.css'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://abdulaziz-alaqs.vercel.app'),
-  title: 'Abdulaziz Alaqs — Software & AI Engineer',
-  description:
-    'Software & AI Engineer who designs, builds and ships whole systems: architecture, backends, data pipelines, LLM integration and the interface on top. Gemini & OpenAI, ASP.NET Core, Node.js, Flutter.',
-  keywords: [
-    'Software Engineer',
-    'AI Engineer',
-    'LLM Integration',
-    'OpenAI API',
-    'Google Gemini',
-    'RAG Pipelines',
-    'Machine Learning',
-    'Next.js',
-    'Node.js',
-    'ASP.NET Core',
-    'Python',
-    'Flutter',
-    'Riyadh',
-    'Saudi Arabia',
-    'Abdulaziz Alaqs',
-    'عبدالعزيز العقص',
-    'مهندس ذكاء اصطناعي',
-  ],
-  authors: [{ name: 'Abdulaziz Alaqs' }],
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: TITLE,
+    template: '%s — Abdulaziz Alaqs',
+  },
+  description: DESCRIPTION,
+  keywords: KEYWORDS,
+  authors: [{ name: 'Abdulaziz Alaqs', url: SITE_URL }],
+  creator: 'Abdulaziz Alaqs',
+  publisher: 'Abdulaziz Alaqs',
+  applicationName: 'Abdulaziz Alaqs — Software & AI Engineer',
+  category: 'technology',
   alternates: {
-    languages: { en: '/', ar: '/' },
+    canonical: '/',
+    languages: { en: '/', ar: '/', 'x-default': '/' },
   },
   openGraph: {
-    title: 'Abdulaziz Alaqs — Software & AI Engineer',
-    description:
-      'I design and ship whole systems — architecture, data, the AI layer, and the interface on top.',
+    title: TITLE,
+    description: DESCRIPTION,
+    url: SITE_URL,
+    siteName: 'Abdulaziz Alaqs',
+    locale: 'en_US',
+    alternateLocale: ['ar_SA'],
     type: 'website',
-    images: ['/og-image.svg'],
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Abdulaziz Alaqs — Software & AI Engineer. Web apps, internal systems and AI features, built end to end.',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Abdulaziz Alaqs — Software & AI Engineer',
-    images: ['/og-image.svg'],
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ['/og-image.png'],
   },
-  robots: { index: true, follow: true },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
 }
 
 export const viewport: Viewport = {
@@ -85,6 +96,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap"
           rel="stylesheet"
+        />
+        {/* Structured data, generated from data/portfolio.json so it never drifts. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(buildJsonLd()) }}
         />
       </head>
       <body className="font-sans bg-ink-950 text-body antialiased">

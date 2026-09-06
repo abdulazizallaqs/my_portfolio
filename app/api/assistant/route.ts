@@ -3,28 +3,30 @@ import portfolioData from '@/data/portfolio.json'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const maxDuration = 30
 
 /**
- * Model selection.
+ * Model selection — ordered fastest-acceptable first.
  *
- * Defaults to `gemini-flash-latest`, which always resolves to Google's current
- * Flash model — so the assistant keeps working when Google rotates versions.
- * Pin a specific model by setting GEMINI_MODEL in .env.local; whatever you set
- * is tried first, and the list below is the fallback chain.
+ * `gemini-2.5-flash` with thinking turned off is the sweet spot: Flash quality
+ * without the multi-second reasoning pause that 2.5 enables by default. The
+ * lite model is the fallback, then the rolling `-latest` alias so the assistant
+ * survives Google rotating versions. Pin one with GEMINI_MODEL if needed.
  */
 const MODEL_CANDIDATES = Array.from(
   new Set(
     [
       process.env.GEMINI_MODEL,
-      'gemini-flash-latest',
       'gemini-2.5-flash',
-      'gemini-flash-lite-latest',
       'gemini-2.5-flash-lite',
+      'gemini-flash-latest',
     ].filter(Boolean) as string[]
   )
 )
 
-const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
+// Overridable so the streaming path can be exercised against a local mock in tests.
+const API_BASE =
+  process.env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com/v1beta/models'
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string }
 type Lang = 'en' | 'ar'
@@ -46,8 +48,8 @@ function buildKnowledgeBase() {
     .map(
       (p: any) =>
         `- ${p.title} [${p.tech.join(', ')}]\n  What it is: ${p.description}\n  Impact: ${p.impact}${
-          p.github ? `\n  Code: ${p.github}` : ''
-        }`
+          p.demo ? `\n  Live: ${p.demo}` : ''
+        }${p.github ? `\n  Code: ${p.github}` : ''}`
     )
     .join('\n')
 
@@ -84,7 +86,7 @@ PROGRAMMING & FRAMEWORKS: ${skills.programming.join(', ')}
 DATA, TOOLS & PLATFORMS: ${skills.tools.join(', ')}
 ENGINEERING PRACTICE: ${skills.automation.join(', ')}
 
-PROJECTS:
+PROJECTS (all live URLs below are public and working — link them when relevant):
 ${projectLines}
 
 EXPERIENCE & EDUCATION:
@@ -102,9 +104,7 @@ const BASE_PROMPT = `You are AAA (Abdulaziz AI Assistant), the assistant on Abdu
 Alaqs's portfolio. You are his advocate. Every visitor is a potential opportunity — your job
 is to make them want to work with him.
 
-═══════════════════════════════════════════════
 STEP 1 — READ WHY THEY ARE HERE
-═══════════════════════════════════════════════
 Silently classify the visitor into ONE of two intents, then answer in that mode.
 
 ▸ INTENT A — THEY WANT SOMETHING BUILT
@@ -124,7 +124,9 @@ Silently classify the visitor into ONE of two intents, then answer in that mode.
       – data platform: Kafka → Airflow → Delta Lake with a RAG layer, built solo
       – mobile: the Smart Quran App in Flutter, 100% offline, on-device recommender,
         proper Arabic typography
-      – reliability: Math Heroes, with multi-LLM fallback and a deterministic generator
+      – reliability: Young Heroes, with multi-LLM fallback and a deterministic generator
+  • These are not slideware: four of them are live on the public web right now, and the
+    profile below carries the URLs. Offer the relevant link so they can click and see it.
   • Sell the single-owner advantage: one engineer means no hand-off gaps between frontend,
     backend, data and AI; one coherent architecture; faster decisions; lower coordination cost.
   • Mention that he ships with CI/CD, automated tests and security review built into the
@@ -170,9 +172,7 @@ Silently classify the visitor into ONE of two intents, then answer in that mode.
 ▸ If the intent is genuinely ambiguous, answer with the strongest overall case and close by
   asking whether they are hiring or looking to have something built.
 
-═══════════════════════════════════════════════
 STEP 2 — ADVOCATE, DO NOT JUST REPORT
-═══════════════════════════════════════════════
 Be genuinely enthusiastic. Every answer should leave the reader thinking "this is exactly
 the person we need."
 
@@ -184,15 +184,13 @@ the person we need."
 • Turn every fact into a benefit: speed to impact, lower risk, less onboarding, one hire or
   one contractor covering what usually takes a team.
 • Use his real numbers as proof: 4.6/5 with Honors, 20% faster deployments, 40% better
-  file-sharing efficiency, 13+ certifications, 5 shipped systems, 2 LLM providers integrated,
-  a 4-person team led.
+  file-sharing efficiency, 13+ certifications, 5 shipped systems, 4 of them live on the
+  public web, 2 LLM providers integrated, a 4-person team led.
 • Highlight his engineering judgment: he designs multi-LLM fallbacks and deterministic
   defaults so AI features never take the product down. That is senior-level thinking.
 • Close warmly with a nudge to reach out — his email, LinkedIn, or WhatsApp.
 
-═══════════════════════════════════════════════
 STEP 3 — HARD RULES
-═══════════════════════════════════════════════
 1. TRUTH IS NON-NEGOTIABLE. Praise the real record as persuasively as you can, but NEVER
    invent an employer, a date, a metric, a technology, a certification, a client or a
    project. One invented claim discards the whole profile in a reader's mind. Enthusiastic
@@ -218,52 +216,134 @@ const LANG_RULE = {
   ar: `\n\nLANGUAGE: The visitor is browsing in Arabic. Reply in fluent, professional Modern Standard Arabic unless they write to you in English, in which case reply in English. Keep technical product names (Gemini, ASP.NET Core, Kafka, Flutter) in Latin script.`,
 } as const
 
-function systemPromptFor(lang: Lang) {
-  return BASE_PROMPT + LANG_RULE[lang]
+/** Built once per language, not per request. */
+const SYSTEM_PROMPT: Record<Lang, string> = {
+  en: BASE_PROMPT + LANG_RULE.en,
+  ar: BASE_PROMPT + LANG_RULE.ar,
 }
 
-async function callGemini(
-  model: string,
-  apiKey: string,
-  messages: ChatMessage[],
-  systemPrompt: string
-) {
-  const contents = messages.map((m) => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }],
-  }))
-
-  const res = await fetch(`${API_BASE}/${model}:generateContent`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey,
+/**
+ * Latency budget.
+ *
+ * `thinkingBudget: 0` turns off the reasoning pass that Gemini 2.5 Flash runs by
+ * default — for an answer this short it adds seconds and buys nothing. Older or
+ * newer models may reject the field, so `requestBody` can be rebuilt without it
+ * (see `withoutThinkingConfig`) and the call retried once.
+ */
+function requestBody(messages: ChatMessage[], systemPrompt: string, thinking: boolean) {
+  return {
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents: messages.map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    })),
+    generationConfig: {
+      temperature: 0.65,
+      maxOutputTokens: 500,
+      topP: 0.95,
+      ...(thinking ? {} : { thinkingConfig: { thinkingBudget: 0 } }),
     },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents,
-      generationConfig: {
-        temperature: 0.65,
-        maxOutputTokens: 900,
-        topP: 0.95,
-      },
-      safetySettings: [
-        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
-        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
-      ],
-    }),
-  })
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+    ],
+  }
+}
 
-  if (!res.ok) {
-    const detail = await res.text()
-    return { ok: false as const, status: res.status, detail }
+/** A 400 naming thinkingConfig means this model does not accept the field. */
+function rejectedThinkingConfig(status: number, detail: string) {
+  return (
+    status === 400 && /thinking|thinkingConfig|thinkingBudget/i.test(detail)
+  )
+}
+
+async function post(model: string, apiKey: string, body: unknown, stream: boolean) {
+  const method = stream ? 'streamGenerateContent?alt=sse' : 'generateContent'
+  return fetch(`${API_BASE}/${model}:${method}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+    body: JSON.stringify(body),
+  })
+}
+
+/**
+ * Opens a streaming call against the first model that accepts it.
+ * Returns the live response so the caller can pipe it straight to the browser —
+ * the visitor sees the first words in a few hundred milliseconds instead of
+ * waiting for the whole answer.
+ */
+async function openStream(apiKey: string, messages: ChatMessage[], lang: Lang) {
+  const systemPrompt = SYSTEM_PROMPT[lang]
+  let lastDetail = ''
+
+  for (const model of MODEL_CANDIDATES) {
+    for (const thinking of [false, true]) {
+      try {
+        const res = await post(model, apiKey, requestBody(messages, systemPrompt, thinking), true)
+        if (res.ok && res.body) return { ok: true as const, model, body: res.body }
+
+        const detail = await res.text()
+        lastDetail = `${model}: ${res.status} ${detail.slice(0, 300)}`
+
+        // Retry this same model once without thinkingConfig, then move on.
+        if (!thinking && rejectedThinkingConfig(res.status, detail)) continue
+        if (res.status === 401 || res.status === 403) {
+          return { ok: false as const, detail: lastDetail, fatal: true }
+        }
+        break
+      } catch (error) {
+        lastDetail = `${model}: ${(error as Error).message}`
+        break
+      }
+    }
   }
 
-  const data = await res.json()
-  const text: string =
-    data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join('') ?? ''
+  return { ok: false as const, detail: lastDetail, fatal: false }
+}
 
-  return { ok: true as const, text: text.trim() }
+/** Pulls the text out of Gemini's SSE frames and emits plain text. */
+function toPlainText(source: ReadableStream<Uint8Array>) {
+  const decoder = new TextDecoder()
+  const encoder = new TextEncoder()
+  let buffer = ''
+
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const reader = source.getReader()
+      try {
+        for (;;) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+
+          let cut = buffer.indexOf('\n')
+          while (cut !== -1) {
+            const line = buffer.slice(0, cut).trim()
+            buffer = buffer.slice(cut + 1)
+            cut = buffer.indexOf('\n')
+
+            if (!line.startsWith('data:')) continue
+            const payload = line.slice(5).trim()
+            if (!payload || payload === '[DONE]') continue
+
+            try {
+              const frame = JSON.parse(payload)
+              const text: string =
+                frame?.candidates?.[0]?.content?.parts
+                  ?.map((p: any) => p?.text ?? '')
+                  .join('') ?? ''
+              if (text) controller.enqueue(encoder.encode(text))
+            } catch {
+              /* partial frame — the next chunk completes it */
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock()
+        controller.close()
+      }
+    },
+  })
 }
 
 export async function POST(request: Request) {
@@ -294,7 +374,7 @@ export async function POST(request: Request) {
 
   messages = messages
     .filter((m) => m && typeof m.content === 'string' && m.content.trim())
-    .slice(-12)
+    .slice(-10)
     .map((m) => ({
       role: m.role === 'assistant' ? 'assistant' : 'user',
       content: m.content.slice(0, 2000),
@@ -304,45 +384,36 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No message provided.' }, { status: 400 })
   }
 
-  let lastDetail = ''
-  for (const model of MODEL_CANDIDATES) {
-    try {
-      const result = await callGemini(model, apiKey, messages, systemPromptFor(lang))
-      if (result.ok && result.text) {
-        return NextResponse.json({ reply: result.text, model, configured: true })
-      }
-      if (result.ok) {
-        lastDetail = 'Empty response from ' + model
-        continue
-      }
-      // 404 / 400 usually means the model is not available on this key — try the next one.
-      lastDetail = `${model}: ${result.status} ${result.detail.slice(0, 300)}`
-      if (result.status === 401 || result.status === 403) break
-    } catch (error) {
-      lastDetail = `${model}: ${(error as Error).message}`
-    }
+  const opened = await openStream(apiKey, messages, lang)
+
+  if (!opened.ok) {
+    console.error('[assistant] no model answered —', opened.detail)
+    return NextResponse.json(
+      {
+        reply:
+          "Sorry — I couldn't reach the model just now. Please try again, or email Abdulaziz at " +
+          (portfolioData as any).personal.email +
+          '.',
+        configured: true,
+        debug: process.env.NODE_ENV !== 'production' ? opened.detail : undefined,
+      },
+      { status: 200 }
+    )
   }
 
-  console.error('[assistant] all models failed —', lastDetail)
-
-  const isDev = process.env.NODE_ENV !== 'production'
-  return NextResponse.json(
-    {
-      reply:
-        "Sorry — I couldn't reach the model just now. Please try again, or email Abdulaziz at " +
-        (portfolioData as any).personal.email +
-        '.',
-      configured: true,
-      // Shown only while developing, so you can see exactly what Google returned.
-      debug: isDev ? lastDetail : undefined,
+  return new Response(toPlainText(opened.body), {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-store, no-transform',
+      'X-Model': opened.model,
+      // Stops proxies (and Nginx in front of some hosts) from buffering the stream.
+      'X-Accel-Buffering': 'no',
     },
-    { status: 200 }
-  )
+  })
 }
 
-
 /**
- * Health check — open http://localhost:3000/api/assistant in a browser.
+ * Health check — open /api/assistant in a browser.
  * Tells you whether the key is loaded and which model actually answers.
  */
 export async function GET() {
@@ -352,29 +423,46 @@ export async function GET() {
     return NextResponse.json({
       status: 'not-configured',
       message:
-        'No API key found. Create a file named .env.local in the project root containing GEMINI_API_KEY=your_key, then restart the dev server (Ctrl+C, then npm run dev).',
+        'No API key found. Set GEMINI_API_KEY — in .env.local for local development (then restart the dev server), or in Project Settings → Environment Variables on Vercel (then redeploy).',
       keyLoaded: false,
       candidates: MODEL_CANDIDATES,
     })
   }
 
   const checks: { model: string; ok: boolean; detail?: string }[] = []
+
   for (const model of MODEL_CANDIDATES) {
-    try {
-      const result = await callGemini(model, apiKey, [{ role: 'user', content: 'Reply with: ok' }], systemPromptFor('en'))
-      if (result.ok) {
-        checks.push({ model, ok: true })
-        return NextResponse.json({
-          status: 'ready',
-          keyLoaded: true,
-          keyPreview: `${apiKey.slice(0, 6)}…${apiKey.slice(-4)}`,
-          activeModel: model,
-          checks,
-        })
+    for (const thinking of [false, true]) {
+      try {
+        const started = Date.now()
+        const res = await post(
+          model,
+          apiKey,
+          requestBody([{ role: 'user', content: 'Reply with: ok' }], SYSTEM_PROMPT.en, thinking),
+          false
+        )
+
+        if (res.ok) {
+          checks.push({ model, ok: true })
+          return NextResponse.json({
+            status: 'ready',
+            keyLoaded: true,
+            keyPreview: `${apiKey.slice(0, 6)}…${apiKey.slice(-4)}`,
+            activeModel: model,
+            thinkingDisabled: !thinking,
+            latencyMs: Date.now() - started,
+            checks,
+          })
+        }
+
+        const detail = await res.text()
+        checks.push({ model, ok: false, detail: `${res.status} ${detail.slice(0, 200)}` })
+        if (!thinking && rejectedThinkingConfig(res.status, detail)) continue
+        break
+      } catch (error) {
+        checks.push({ model, ok: false, detail: (error as Error).message })
+        break
       }
-      checks.push({ model, ok: false, detail: `${result.status} ${result.detail.slice(0, 200)}` })
-    } catch (error) {
-      checks.push({ model, ok: false, detail: (error as Error).message })
     }
   }
 

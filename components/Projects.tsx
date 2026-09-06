@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ExternalLink, Github, Star, Calendar, TrendingUp } from 'lucide-react'
+import { ExternalLink, Github, Calendar, TrendingUp } from 'lucide-react'
 import SectionBackground from './SectionBackground'
 import { useSite } from '@/lib/site-context'
 import { useScrollAnimation, animationVariants, getStaggerDelay } from '@/hooks/useScrollAnimation'
@@ -57,6 +57,8 @@ interface Project {
 
 type ProjectCopy = {
   featured: string
+  live: string
+  liveAria: string
   tapHint: string
   impact: string
   techStack: string
@@ -79,8 +81,8 @@ function ProjectCard3D({ project, index, t }: ProjectCard3DProps) {
   const hasDemo = isRealLink(project.demo)
 
   return (
-    <div 
-      className="relative h-[320px] sm:h-[380px] md:h-[420px] perspective-1000"
+    <div
+      className="relative h-[400px] sm:h-[456px] md:h-[500px] perspective-1000"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false)
@@ -100,24 +102,49 @@ function ProjectCard3D({ project, index, t }: ProjectCard3DProps) {
         {/* Front Face */}
         <div className="absolute inset-0 w-full h-full backface-hidden bg-ink-900/70 backdrop-blur-xl rounded-2xl shadow-xl border border-cyan-500/20 overflow-hidden">
           {/* Project Image/Gradient */}
-          <div className={`h-32 sm:h-40 md:h-48 bg-gradient-to-br ${getProjectGradient(index)} relative`}>
-            {project.featured && (
-              <div className="absolute top-4 left-4 bg-yellow-400 text-fg px-3 py-1 text-sm font-medium rounded-full flex items-center gap-1">
-                <Star size={14} fill="currentColor" />
-                {t.featured}
-              </div>
-            )}
-            <div className="absolute bottom-4 left-4 right-4">
-              <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 drop-shadow-lg">
-                {project.title}
-              </h3>
+          {/*
+            Badge and title are laid out in flow rather than absolutely, so a
+            title that wraps to three lines on a narrow screen pushes the header
+            apart instead of sliding underneath the badge.
+          */}
+          <div
+            className={`h-36 sm:h-40 md:h-48 bg-gradient-to-br ${getProjectGradient(
+              index
+            )} flex flex-col justify-between gap-2 p-4`}
+          >
+            {/*
+              A deployed project is worth more than a "Featured" label, so where
+              one exists the badge is the link to it. stopPropagation keeps the
+              click from also flipping the card.
+            */}
+            <div className="min-h-[1.75rem]">
+              {hasDemo && (
+                <a
+                  href={project.demo}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${t.liveAria} — ${project.title}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1.5 bg-pure/95 text-carbon ps-2.5 pe-3 py-1.5 text-xs font-bold uppercase tracking-wide rounded-full shadow-lg hover:bg-pure transition-all duration-300 hover:scale-105"
+                >
+                  <span className="relative flex w-2 h-2">
+                    <span className="absolute inline-flex w-full h-full rounded-full bg-red-500 opacity-70 animate-ping"></span>
+                    <span className="relative inline-flex w-2 h-2 rounded-full bg-red-500"></span>
+                  </span>
+                  {t.live}
+                  <ExternalLink size={12} />
+                </a>
+              )}
             </div>
+            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white drop-shadow-lg leading-snug">
+              {project.title}
+            </h3>
           </div>
 
           {/* Front Content */}
-          <div className="p-3 sm:p-4 md:p-6 flex flex-col h-[calc(100%-8rem)] sm:h-[calc(100%-10rem)] md:h-[calc(100%-12rem)]">
+          <div className="p-3 sm:p-4 md:p-6 flex flex-col h-[calc(100%-9rem)] sm:h-[calc(100%-10rem)] md:h-[calc(100%-12rem)]">
             <p className="text-muted mb-3 sm:mb-4 text-xs sm:text-sm leading-relaxed flex-grow">
-              {project.description.length > 150 ? project.description.substring(0, 150) + '…' : project.description}
+              {project.description.length > 230 ? project.description.substring(0, 230) + '…' : project.description}
             </p>
             
             <div className="flex flex-wrap gap-1 sm:gap-2 mb-3 sm:mb-4">

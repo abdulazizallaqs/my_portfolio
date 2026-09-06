@@ -1,7 +1,17 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Mail, Linkedin, Github, MapPin, Send, Phone, CheckCircle, AlertCircle } from 'lucide-react'
+import {
+  Mail,
+  Linkedin,
+  Github,
+  MapPin,
+  Send,
+  Phone,
+  MessageCircle,
+  CheckCircle,
+  AlertCircle,
+} from 'lucide-react'
 import { useSite } from '@/lib/site-context'
 import { useScrollAnimation, animationVariants, getStaggerDelay } from '@/hooks/useScrollAnimation'
 import emailjs from '@emailjs/browser'
@@ -91,6 +101,10 @@ const Contact = () => {
     }
   }
 
+  // Dialling the number and opening a WhatsApp chat are two different intents,
+  // so they get two cards rather than one ambiguous "Phone / WhatsApp" row.
+  const telHref = `tel:${personal.phone.replace(/[^\d+]/g, '')}`
+
   const contactMethods = [
     {
       icon: Mail,
@@ -104,9 +118,9 @@ const Contact = () => {
       icon: Phone,
       label: t.contact.labels.phone,
       value: personal.phone,
-      href: personal.whatsapp,
-      color: 'text-teal-400',
-      bgColor: 'bg-teal-500/10'
+      href: telHref,
+      color: 'text-sky-400',
+      bgColor: 'bg-sky-500/10'
     },
     {
       icon: MapPin,
@@ -123,6 +137,14 @@ const Contact = () => {
       href: personal.github,
       color: 'text-fg',
       bgColor: 'bg-ink-900'
+    },
+    {
+      icon: MessageCircle,
+      label: t.contact.labels.whatsapp,
+      value: personal.phone,
+      href: personal.whatsapp,
+      color: 'text-teal-400',
+      bgColor: 'bg-teal-500/10'
     }
   ]
 

@@ -1,6 +1,5 @@
-# Allow all crawlers
 User-agent: *
 Allow: /
 
-# Sitemap location — update the domain after deploying
-Sitemap: https://your-domain.vercel.app/sitemap.xml
+# Nothing here is private; crawl freely.
+Sitemap: https://abdulazizallaqs.com/sitemap.xml

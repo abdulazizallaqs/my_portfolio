@@ -125,7 +125,7 @@ export const ui = {
       ],
       inPractice: 'In practice:',
       inPracticeBody:
-        'the Student Collaboration Portal uses Gemini for NLP-based PDF summarization and semantic search. The tender platform predicts deal values with a supervised model trained on historical bids. Math Heroes falls back across two LLM providers, then to an algorithmic generator. Every one of them is an AI feature that cannot take the product down with it.',
+        'the Student Collaboration Portal uses Gemini for NLP-based PDF summarization and semantic search. The tender platform predicts deal values with a supervised model trained on historical bids. Young Heroes falls back across two LLM providers, then to an algorithmic generator. Every one of them is an AI feature that cannot take the product down with it.',
       approachIntro:
         'I care less about which framework is fashionable and more about whether the system behaves the way I claimed it would — on a bad network, with a missing key, at 2am.',
       approach: [
@@ -138,7 +138,7 @@ export const ui = {
         {
           icon: '🛡️',
           title: 'Design for the model failing',
-          desc: 'Every AI path I ship has defined behaviour for a missing key, a timeout, or a bad response. Math Heroes falls back across two LLM providers, then to an algorithmic generator.',
+          desc: 'Every AI path I ship has defined behaviour for a missing key, a timeout, or a bad response. Young Heroes falls back across two LLM providers, then to an algorithmic generator.',
           metrics: 'Multi-LLM fallback • Timeouts • Schema validation',
         },
         {
@@ -295,9 +295,11 @@ export const ui = {
     },
 
     projects: {
-      heading: 'Featured Projects',
-      lede: 'Systems I designed, built and shipped — where the AI layer and the software around it were engineered together',
+      heading: 'Projects',
+      lede: 'Systems I designed, built and shipped — where the AI layer and the software around it were engineered together. Four of them are live right now; open one and try it.',
       featured: 'Featured',
+      live: 'Live',
+      liveAria: 'Open the live site',
       tapHint: 'Tap to see details',
       impact: 'Impact',
       techStack: 'Tech Stack',
@@ -349,7 +351,13 @@ export const ui = {
       failure: 'Failed to send message. Please try again or contact me directly.',
       errRequired: 'is required',
       errEmail: 'Email is invalid',
-      labels: { email: 'Email', phone: 'Phone / WhatsApp', location: 'Location', github: 'GitHub' },
+      labels: {
+        email: 'Email',
+        phone: 'Phone',
+        location: 'Location',
+        github: 'GitHub',
+        whatsapp: 'WhatsApp',
+      },
     },
 
     footer: {
@@ -487,7 +495,7 @@ export const ui = {
       ],
       inPractice: 'على أرض الواقع:',
       inPracticeBody:
-        'منصة تعاون الطلاب تستخدم Gemini لتلخيص ملفات PDF والبحث الدلالي. ومنصة المناقصات تتنبأ بقيم الصفقات عبر نموذج مُشرَف مُدرَّب على عروض تاريخية. وأبطال الرياضيات تتحوّل بين مزوّدَي نماذج لغة ثم إلى مولّد خوارزمي. كل واحدة منها ميزة ذكية لا تستطيع أن تُسقط المنتج معها.',
+        'منصة تعاون الطلاب تستخدم Gemini لتلخيص ملفات PDF والبحث الدلالي. ومنصة المناقصات تتنبأ بقيم الصفقات عبر نموذج مُشرَف مُدرَّب على عروض تاريخية. و"أبطال صغار" تتحوّل بين مزوّدَي نماذج لغة ثم إلى مولّد خوارزمي. كل واحدة منها ميزة ذكية لا تستطيع أن تُسقط المنتج معها.',
       approachIntro:
         'لا يهمّني أي إطار عمل رائج بقدر ما يهمّني أن يتصرّف النظام كما وعدت — على شبكة سيئة، وبمفتاح مفقود، في الثانية فجراً.',
       approach: [
@@ -500,7 +508,7 @@ export const ui = {
         {
           icon: '🛡️',
           title: 'صمّم لاحتمال فشل النموذج',
-          desc: 'كل مسار ذكاء أطلقه له سلوك محدّد عند فقد المفتاح أو انتهاء المهلة أو رد غير صالح. أبطال الرياضيات تتحوّل بين مزوّدَين ثم إلى مولّد خوارزمي.',
+          desc: 'كل مسار ذكاء أطلقه له سلوك محدّد عند فقد المفتاح أو انتهاء المهلة أو رد غير صالح. "أبطال صغار" تتحوّل بين مزوّدَين ثم إلى مولّد خوارزمي.',
           metrics: 'تحويل متعدد النماذج • مهل زمنية • تحقق من المخطط',
         },
         {
@@ -657,9 +665,11 @@ export const ui = {
     },
 
     projects: {
-      heading: 'مشاريع مختارة',
-      lede: 'أنظمة صمّمتها وبنيتها وأطلقتها — حيث هُندست طبقة الذكاء والبرمجيات حولها معاً',
+      heading: 'المشاريع',
+      lede: 'أنظمة صمّمتها وبنيتها وأطلقتها — حيث هُندست طبقة الذكاء والبرمجيات حولها معاً. أربعة منها تعمل الآن على الإنترنت؛ افتح أيّاً منها وجرّبه.',
       featured: 'مميّز',
+      live: 'مباشر',
+      liveAria: 'افتح الموقع المباشر',
       tapHint: 'اضغط لعرض التفاصيل',
       impact: 'الأثر',
       techStack: 'التقنيات',
@@ -711,7 +721,13 @@ export const ui = {
       failure: 'تعذّر إرسال الرسالة. حاول مرة أخرى أو تواصل معي مباشرة.',
       errRequired: 'مطلوب',
       errEmail: 'البريد الإلكتروني غير صالح',
-      labels: { email: 'البريد', phone: 'الجوال / واتساب', location: 'الموقع', github: 'GitHub' },
+      labels: {
+        email: 'البريد',
+        phone: 'الجوال',
+        location: 'الموقع',
+        github: 'GitHub',
+        whatsapp: 'واتساب',
+      },
     },
 
     footer: {

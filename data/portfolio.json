@@ -121,7 +121,7 @@
       ],
       "impact": "40% improvement in file-sharing efficiency; LLM-powered study assistant with PDF summarization and semantic search, delivered as team lead of 4 developers.",
       "github": "https://github.com/abdulazizallaqs/student-helper-app",
-      "demo": "",
+      "demo": "https://studenthelper.abdulazizallaqs.com/",
       "featured": true
     },
     {
@@ -137,13 +137,13 @@
       ],
       "impact": "End-to-end data engineering: streaming ingestion, schema-validated lakehouse storage, orchestrated workflows, and a RAG layer that turns raw product data into semantic search.",
       "github": "",
-      "demo": "",
+      "demo": "https://e-commerce-real-time-product.abdulazizallaqs.com/",
       "featured": true
     },
     {
       "id": 4,
-      "title": "Math Heroes — AI Educational Game",
-      "description": "A full-stack educational game for children with a RESTful Node.js backend and a responsive vanilla JavaScript frontend. I architected an adaptive-difficulty algorithm driven by real-time analysis of player performance, and built a multi-LLM fallback system across OpenAI and Google Gemini so question generation stays available even when a provider fails — with a deterministic algorithmic generator underneath when no API key is configured at all.",
+      "title": "Young Heroes — Bilingual Learning Game for Kids",
+      "description": "A full-stack learning game for children aged 5–10: eight games across mathematics and language, character customisation, and an XP/level progression system, in English and Arabic. I architected an adaptive-difficulty algorithm driven by real-time analysis of player performance, and built a multi-LLM fallback across OpenAI and Google Gemini so question generation stays available even when a provider fails — with a deterministic algorithmic generator underneath when no API key is configured at all.",
       "tech": [
         "JavaScript",
         "Node.js",
@@ -151,9 +151,9 @@
         "OpenAI API",
         "Google Gemini"
       ],
-      "impact": "Multi-LLM fallback architecture with a deterministic generator underneath — the AI enhances the game but can never break it.",
-      "github": "https://github.com/abdulazizallaqs/Math-Heroes",
-      "demo": "",
+      "impact": "Multi-LLM fallback architecture with a deterministic generator underneath — the AI enriches the game but can never break it. Runs entirely in the browser, no account and no data leaving the device.",
+      "github": "https://github.com/abdulazizallaqs/Young-Heroes",
+      "demo": "https://younghero.abdulazizallaqs.com/",
       "featured": true
     },
     {
@@ -169,7 +169,7 @@
       ],
       "impact": "100% offline by design — every feature, including the intelligent verse recommender, runs on-device with no network dependency and no user data leaving the phone.",
       "github": "https://github.com/abdulazizallaqs/The-Noble-Quran",
-      "demo": "",
+      "demo": "https://quran.abdulazizallaqs.com/",
       "featured": false
     }
   ],

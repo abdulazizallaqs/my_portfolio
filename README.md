@@ -124,11 +124,47 @@ no longer served by the API. To pin a different model, set `GEMINI_MODEL` in `.e
 the route falls through a list of candidates if the requested model is unavailable on your
 key, so the chat keeps working when Google rotates models.
 
+**Why it feels fast.** Three things, all in `app/api/assistant/route.ts`:
+
+1. **It streams.** The route calls `streamGenerateContent`, unwraps Google's SSE frames and
+   pipes plain text straight to the browser, which appends it to the bubble as it lands. The
+   first words show up in a couple of hundred milliseconds instead of after the whole answer
+   is generated.
+2. **Thinking is off.** Gemini 2.5 Flash runs a reasoning pass by default that adds seconds
+   and buys nothing for a five-sentence answer, so the route sends
+   `generationConfig.thinkingConfig.thinkingBudget = 0`. A model that rejects the field is
+   retried once without it, so this can never break the chat.
+3. **A tighter budget.** `maxOutputTokens` is 500 and only the last 10 turns are sent.
+
+Set `GEMINI_API_BASE` to point the route at a local mock instead of Google — that is how the
+streaming path is tested without spending a real key.
+
 **Deploying to Vercel:** add `GEMINI_API_KEY` under Project Settings → Environment Variables.
+
+## SEO
+
+The site has to be found by two very different searches: someone typing a job title, and
+someone typing "مبرمج مواقع" or "build me a web app". Both sets of terms are covered.
+
+- `lib/seo.ts` is the single source: title, description, keywords, and the JSON-LD graph.
+  The structured data is **generated from `data/portfolio.json`**, so updating a project or a
+  certification updates what search engines see — they cannot drift apart.
+- The graph publishes a `Person`, a `ProfessionalService` with an offer catalogue of what he
+  builds, a `WebSite`, and one `SoftwareApplication` per live project.
+- The `<h1>` types itself in on screen, so it also carries a screen-reader-only copy of the
+  real heading — otherwise crawlers that do not run JavaScript would see an empty `<h1>`,
+  which is the single most valuable tag on the page.
+- `public/og-image.png` is a real 1200×630 PNG (SVG social cards do not render on most
+  platforms). Regenerate it by editing the HTML in the git history and re-screenshotting.
+- `public/robots.txt` and `public/sitemap.xml` carry the live domain and `hreflang`
+  alternates for both languages.
+
+After deploying, submit the sitemap once in Google Search Console — that is what actually
+gets the site crawled quickly.
 
 ### Before deploying
 
-- Update the domain in `public/robots.txt` and `public/sitemap.xml`
+- Update the domain in `lib/seo.ts`, `public/robots.txt` and `public/sitemap.xml` if it changes
 - Add your real LinkedIn URL in `data/portfolio.json` if it differs
 - Optionally configure EmailJS (see `EMAILJS_SETUP.md`); without it the contact form falls back to a `mailto:` link
 
