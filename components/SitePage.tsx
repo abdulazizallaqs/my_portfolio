@@ -10,7 +10,12 @@ import Contact from '@/components/Contact'
 import Footer from '@/components/Footer'
 import Navigation from '@/components/Navigation'
 
-export default function Home() {
+/**
+ * The page itself, identical in both languages. Which language it renders in
+ * is decided by the route that mounts it — `/` for English, `/ar` for Arabic —
+ * so both are fully server-rendered and indexable.
+ */
+export default function SitePage() {
   return (
     <>
       <Navigation />

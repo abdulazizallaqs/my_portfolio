@@ -23,7 +23,9 @@ const DATA: Record<Lang, PortfolioData> = {
   ar: arData as unknown as PortfolioData,
 }
 
-export const LANG_KEY = 'aa.lang'
+/** Each language is a real URL, so a search engine can index both. */
+export const PATH_FOR: Record<Lang, string> = { en: '/', ar: '/ar' }
+
 export const THEME_KEY = 'aa.theme'
 
 interface SiteContextValue {
@@ -35,7 +37,8 @@ interface SiteContextValue {
   /** Always the English record — for stable keys, URLs and analytics. */
   base: PortfolioData
   theme: Theme
-  setLang: (lang: Lang) => void
+  /** The URL of this page in the other language. */
+  otherLangHref: string
   toggleLang: () => void
   setTheme: (theme: Theme) => void
   toggleTheme: () => void
@@ -45,66 +48,50 @@ interface SiteContextValue {
 
 const SiteContext = createContext<SiteContextValue | null>(null)
 
-function applyDocument(lang: Lang, theme: Theme) {
-  if (typeof document === 'undefined') return
-  const root = document.documentElement
-  root.lang = lang
-  root.dir = lang === 'ar' ? 'rtl' : 'ltr'
-  root.classList.toggle('light', theme === 'light')
-}
-
-export function SiteProvider({ children }: { children: ReactNode }) {
-  // Server render and first client render must agree, so start from the
-  // defaults and reconcile with localStorage in an effect. The inline script
-  // in `app/layout.tsx` has already painted the correct theme by then, so
-  // there is no flash.
-  const [lang, setLangState] = useState<Lang>('en')
+/**
+ * Language now comes from the route, not from storage: `/` is English and
+ * `/ar` is Arabic, each server-rendered in full so both are indexable. The
+ * provider is told which one it is rendering; only the theme is a stored,
+ * per-visitor preference.
+ */
+export function SiteProvider({ lang, children }: { lang: Lang; children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('dark')
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
     try {
-      const storedLang = window.localStorage.getItem(LANG_KEY)
-      const storedTheme = window.localStorage.getItem(THEME_KEY)
-      const nextLang: Lang = storedLang === 'ar' ? 'ar' : 'en'
-      const nextTheme: Theme = storedTheme === 'light' ? 'light' : 'dark'
-      setLangState(nextLang)
-      setThemeState(nextTheme)
-      applyDocument(nextLang, nextTheme)
+      const stored = window.localStorage.getItem(THEME_KEY)
+      const next: Theme = stored === 'light' ? 'light' : 'dark'
+      setThemeState(next)
+      document.documentElement.classList.toggle('light', next === 'light')
     } catch {
-      applyDocument('en', 'dark')
+      /* storage unavailable — dark stays */
     } finally {
       setReady(true)
     }
   }, [])
 
-  const setLang = useCallback(
-    (next: Lang) => {
-      setLangState(next)
-      applyDocument(next, theme)
-      try {
-        window.localStorage.setItem(LANG_KEY, next)
-      } catch {
-        /* storage unavailable — the choice just won't persist */
-      }
-    },
-    [theme]
-  )
+  const setTheme = useCallback((next: Theme) => {
+    setThemeState(next)
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('light', next === 'light')
+    }
+    try {
+      window.localStorage.setItem(THEME_KEY, next)
+    } catch {
+      /* storage unavailable — the choice just won't persist */
+    }
+  }, [])
 
-  const setTheme = useCallback(
-    (next: Theme) => {
-      setThemeState(next)
-      applyDocument(lang, next)
-      try {
-        window.localStorage.setItem(THEME_KEY, next)
-      } catch {
-        /* storage unavailable — the choice just won't persist */
-      }
-    },
-    [lang]
-  )
+  const otherLangHref = PATH_FOR[lang === 'en' ? 'ar' : 'en']
 
-  const toggleLang = useCallback(() => setLang(lang === 'en' ? 'ar' : 'en'), [lang, setLang])
+  // The two languages sit under different root layouts, so switching is a real
+  // navigation rather than a client-side transition. The theme survives it
+  // because it lives in localStorage.
+  const toggleLang = useCallback(() => {
+    if (typeof window !== 'undefined') window.location.assign(otherLangHref)
+  }, [otherLangHref])
+
   const toggleTheme = useCallback(
     () => setTheme(theme === 'dark' ? 'light' : 'dark'),
     [theme, setTheme]
@@ -119,13 +106,13 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       data: DATA[lang],
       base: DATA.en,
       theme,
-      setLang,
+      otherLangHref,
       toggleLang,
       setTheme,
       toggleTheme,
       ready,
     }),
-    [lang, theme, setLang, toggleLang, setTheme, toggleTheme, ready]
+    [lang, theme, otherLangHref, toggleLang, setTheme, toggleTheme, ready]
   )
 
   return <SiteContext.Provider value={value}>{children}</SiteContext.Provider>

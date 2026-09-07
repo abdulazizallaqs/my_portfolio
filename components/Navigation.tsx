@@ -6,23 +6,27 @@ import { useSite } from '@/lib/site-context'
 
 /** Language + theme switches, shared by the desktop bar and the mobile sheet. */
 function Switches() {
-  const { t, lang, theme, toggleLang, toggleTheme } = useSite()
+  const { t, lang, theme, otherLangHref, toggleTheme } = useSite()
 
   const base =
     'inline-flex items-center justify-center gap-1.5 rounded-full border border-cyan-500/25 bg-ink-800/70 text-body hover:text-cyan-300 hover:border-cyan-400/50 transition-all duration-300'
 
   return (
     <div className="flex items-center gap-2">
-      <button
-        type="button"
-        onClick={toggleLang}
+      {/*
+        A real link, not a button. Each language is its own URL now, and this
+        anchor is how a crawler discovers the other one.
+      */}
+      <a
+        href={otherLangHref}
+        hrefLang={lang === 'en' ? 'ar' : 'en'}
         aria-label={t.langAria}
         title={t.langAria}
         className={`${base} px-3 h-10 text-xs font-semibold`}
       >
         <Languages size={15} />
         <span className={lang === 'en' ? 'font-arabic' : ''}>{t.langLabel}</span>
-      </button>
+      </a>
 
       <button
         type="button"
@@ -38,7 +42,8 @@ function Switches() {
 }
 
 const Navigation = () => {
-  const { t, data } = useSite()
+  const { t, data, lang } = useSite()
+  const homeHref = lang === 'ar' ? '/ar' : '/'
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
 
@@ -62,7 +67,7 @@ const Navigation = () => {
         <div className="flex items-center justify-between w-full gap-4 2xl:gap-8">
           {/* Wordmark */}
           <div className="flex-shrink-0">
-            <a href="#" className="group flex items-center">
+            <a href={homeHref} className="group flex items-center">
               <div className="relative">
                 <span className="text-2xl font-bold brand-gradient tracking-tight">{first}</span>
                 <span className="text-2xl font-light text-body ms-1">{rest.join(' ')}</span>

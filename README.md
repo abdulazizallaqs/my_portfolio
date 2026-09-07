@@ -19,11 +19,24 @@ component code.
 ## Language and theme
 
 The site ships bilingual (English / Arabic) and in two themes (dark by default, light optional).
-Both switches sit in the navigation bar and persist in `localStorage` (`aa.lang`, `aa.theme`);
-an inline script in `app/layout.tsx` applies the stored choice before first paint, so there is
-no flash of the wrong language or theme.
 
-`lib/site-context.tsx` is the single source of truth. `useSite()` returns:
+**Language is a URL, not a setting.** `/` is English and `/ar` is Arabic, each fully rendered
+on the server. This is not cosmetic: a language that only exists behind a client-side toggle
+has no URL, so a search engine can never index it — it crawls whatever the server sends and
+does not click buttons or read `localStorage`. Before the split, the served HTML contained
+**4 Arabic words**; now the Arabic page contains over **2,100**.
+
+The two languages sit under separate root layouts (`app/(en)` and `app/(ar)`, route groups, so
+they do not appear in the URL) because each needs its own `<html lang>` and `dir` in the served
+markup. Switching language is a real navigation, and the switch in the nav bar is an `<a>`, not
+a button — that link is how a crawler discovers the other version.
+
+**Theme** is still a stored per-visitor preference (`aa.theme` in `localStorage`), applied by
+an inline script in `components/RootShell.tsx` before first paint so there is no flash. It
+survives the language switch.
+
+`lib/site-context.tsx` is the single source of truth. The provider is *told* which language
+it is rendering by the route that mounts it. `useSite()` returns:
 
 | Value | What it is |
 |---|---|
@@ -31,7 +44,8 @@ no flash of the wrong language or theme.
 | `t` | UI copy for the active language, from `lib/ui.ts` |
 | `data` | `data/portfolio.json` or `data/portfolio.ar.json` |
 | `theme` | `'dark' \| 'light'` |
-| `setLang` / `toggleLang` / `setTheme` / `toggleTheme` | Switches |
+| `otherLangHref` | This page's URL in the other language |
+| `toggleLang` / `setTheme` / `toggleTheme` | Switches |
 
 **Adding or changing copy:** English is the schema of record. Edit `data/portfolio.json`
 and `lib/ui.ts` (the `ui.en` object), then mirror the same keys in `data/portfolio.ar.json`
@@ -146,9 +160,14 @@ streaming path is tested without spending a real key.
 The site has to be found by two very different searches: someone typing a job title, and
 someone typing "مبرمج مواقع" or "build me a web app". Both sets of terms are covered.
 
-- `lib/seo.ts` is the single source: title, description, keywords, and the JSON-LD graph.
-  The structured data is **generated from `data/portfolio.json`**, so updating a project or a
-  certification updates what search engines see — they cannot drift apart.
+- `lib/seo.ts` is the single source: title, description, keywords, and the JSON-LD graph —
+  all of it per-language. The structured data is **generated from the portfolio JSON**, so
+  updating a project or a certification updates what search engines see; they cannot drift.
+- Keywords are **not** shared between the two pages. Someone searching in Arabic types
+  different words than someone searching in English, and mixing both sets into one page
+  dilutes both. Each page carries only its own language's terms.
+- Both pages declare `canonical` and a full set of `hreflang` alternates, so Google knows they
+  are the same content in two languages rather than duplicates competing with each other.
 - The graph publishes a `Person`, a `ProfessionalService` with an offer catalogue of what he
   builds, a `WebSite`, and one `SoftwareApplication` per live project.
 - The `<h1>` types itself in on screen, so it also carries a screen-reader-only copy of the
